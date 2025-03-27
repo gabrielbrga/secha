@@ -1,2 +1,14 @@
+### lista de carros
+GET http://localhost:5002/api/carros
 
-GET http://localhost:5002
+### Cadastar carro 
+POST http://localhost:5002/api/carros
+Content-Type: application/json
+
+### atualiza dados de carros
+PUT http://localhost:5002/api/carros
+Content-Type: application/json
+
+### remove carros pelo id
+DELETE  http://localhost:5002/api/carros
+Content-Type: application/json
