@@ -22,6 +22,13 @@ app.MapGet("/api/carros", ([FromServices] AppDataContext ctx) =>{
 // POST: Cadastrar carro
 app.MapPost("/api/carros", ([FromBody] Carro carro, [FromServices] AppDataContext ctx) =>{
 
+
+    var modelo = ctx.Modelos.find(carro.Modelo. Id);
+    if(modelo == null){
+        return Results.BadRequest("modelo não existe!");
+    }
+    
+
     
         ctx.Carros.Add(carro);
         ctx.SaveChanges();
@@ -67,6 +74,17 @@ app.MapDelete("/api/carros/{id}", ([FromRoute] int id, [FromServices] AppDataCon
     return Results.NoContent();
 
 
+});
+
+// GET : lista todos os modelos cadastrados 
+app.MapGet("/api/modelos", ([FromServices] AppDataContext ctx) => {
+    
+    var modelos = ctx.Modelos.ToList();
+
+    if (modelos == null |0| modelos.Count == 0){
+        return Results.NotFound();
+    }
+    return Results.Ok(modelos);
 });
 
 
