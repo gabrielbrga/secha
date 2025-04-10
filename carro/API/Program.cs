@@ -1,91 +1,128 @@
 using API.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;    
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDataContext>();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    
+    options.SwaggerDoc("v1", new OpenApiInfo
+ {   
+Title = "Swagger documentação web API Carros",
+Description = "um exemplo de como fornecer a documentação para APIs",
+Contact = new OpenApiContact(){
+    Name = "gabriel",
+    Email = "aagagas@gmail.com"
+},
+License = new OpenApiLicense(){
+    Name = "MIT License",
+    Url = new Uri ("https://opensurce.org/licenses/MIT")
+}
+ });
+
+});
+
 var app = builder.Build();
 
+app.UseSwagger();
+app.UseSwaggerUI();
 
-
-// Endpoints relacionados ao recurso de carros
-// GET: Lista de todos os carros cadastrados
-app.MapGet("/api/carros", ([FromServices] AppDataContext ctx) =>{
+// Endpoints relacionados ao recurso de Carros
+// GET: Lista todos os carros cadastrados
+app.MapGet("/api/carros", ([FromServices] AppDataContext ctx) => {
     if(ctx.Carros.Any()){
         return Results.Ok(ctx.Carros.ToList());
     }
+
     return Results.NotFound();
 });
-
 
 // POST: Cadastrar carro
-app.MapPost("/api/carros", ([FromBody] Carro carro, [FromServices] AppDataContext ctx) =>{
+app.MapPost("/api/carros", ([FromBody] Carro carro,
+                            [FromServices] AppDataContext ctx) => {
 
-
-    var modelo = ctx.Modelos.find(carro.Modelo. Id);
-    if(modelo == null){
-        return Results.BadRequest("modelo não existe!");
+    carro.Modelo = ctx.Modelos.Find(carro.Modelo.Id);
+    if (carro.Modelo == null) {
+        return Results.BadRequest("Modelo não existe!");
     }
-    
+    if (carro.Name == null || carro.Name.Length < 3) {
+        return Results.BadRequest("Nome do carro deve conter mais de 3char!");
+    }
 
-    
-        ctx.Carros.Add(carro);
-        ctx.SaveChanges();
-
-        return Results.Created("", carro);
+    ctx.Carros.Add(carro);
+    ctx.SaveChanges();
+    return Results.Created("", carro);
 });
 
-// GET: Buscar carro pelo id
-app.MapGet("/api/carros/{id}", ([FromRoute] int id, [FromServices] AppDataContext ctx) =>{
+// GET: Buscar o carro pelo id 
+app.MapGet("/api/carros/{id}", ([FromRoute] int id,
+                                [FromServices] AppDataContext ctx) => {
     Carro? carro = ctx.Carros.Find(id);
-    if(carro != null){
+
+    if (carro != null) {
         return Results.Ok(carro);
     }
+
     return Results.NotFound();
 });
 
-// PUT: atualiza os dados do carro pelo id
-app.MapPut("/api/carros/{id}", ([FromRoute] int id, [FromBody] Carro carro, [FromServices] AppDataContext ctx) =>{
+// PUT: Atualiza os dados do Carro pelo Id 
+app.MapPut("/api/carros/{id}", ([FromRoute] int id,
+                                [FromBody] Carro carro,
+                                [FromServices] AppDataContext ctx) => {
     Carro? entidade = ctx.Carros.Find(id);
+    entidade.Modelo = ctx.Modelos.Find(carro.Modelo.Id);
 
-    if(entidade != null){
+    if (entidade.Modelo == null) {
+        return Results.BadRequest("Modelo não existe!");
+    }
+    if (carro.Name == null || carro.Name.Length < 3) {
+        return Results.BadRequest("Nome do carro deve conter mais de 3char!");
+    }
+
+    if (entidade != null) {
         entidade.Name = carro.Name;
         ctx.Carros.Update(entidade);
         ctx.SaveChanges();
         return Results.Ok(entidade);
     }
-
     return Results.NotFound();
-
 });
 
-
-// DELETE: Remove um carro pelo id
-app.MapDelete("/api/carros/{id}", ([FromRoute] int id, [FromServices] AppDataContext ctx) =>{
-
+// DELETE: Remove um carro pelo Id 
+app.MapDelete("/api/carros/{id}", ([FromRoute] int id,
+                                   [FromServices] AppDataContext ctx) => {   
     Carro? carro = ctx.Carros.Find(id);
-    if(carro == null){
+    if(carro == null) {
         return Results.NotFound();
     }
-    
+
     ctx.Carros.Remove(carro);
     ctx.SaveChanges();
     return Results.NoContent();
-
-
 });
 
-// GET : lista todos os modelos cadastrados 
-app.MapGet("/api/modelos", ([FromServices] AppDataContext ctx) => {
-    
+// GET: Lista todos os modelos cadastrados
+app.MapGet("/api/modelos", ([FromQuery] string name, [FromServices] AppDataContext ctx) => {
     var modelos = ctx.Modelos.ToList();
-
-    if (modelos == null |0| modelos.Count == 0){
-        return Results.NotFound();
+    if (modelos == null || modelos.Count == 0) {
+        return Results.NotFound();    
     }
     return Results.Ok(modelos);
 });
 
+// GET: Busca  todos os modelos cadastrados
+app.MapGet("/api/modelos/{id}", ([FromRoute] int id,
+                                 [FromServices] AppDataContext ctx) => {
+    var modelo = ctx.Modelos.Find(id);
+    if (modelo == null) {
+        return Results.NotFound();    
+    }
+    return Results.Ok(modelo);
+});
 
 app.Run();
